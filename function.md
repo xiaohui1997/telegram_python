@@ -25,4 +25,7 @@ async def handle_menu_button_click(update: Update, context: CallbackContext) -> 
     elif query.data == "menu_button1":
         # 在聊天中发送一个文本消息，指示菜单按钮被点击了
         await query.edit_message_text(text='你点击了菜单按钮1')
+
+# 添加回调查询处理程序
+app.add_handler(CallbackQueryHandler(handle_menu_button_click))
 ```
