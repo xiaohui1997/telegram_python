@@ -18,7 +18,7 @@ bots = None
 chat_id = None
 
 #token变量
-start_token = 'fanye'
+start_token = '240b093ac0f5de8b7822af95c1bc2beb9a7b912e1f0c1e51976be6698b76e88b'
 
 # 创建 Telegram 机器人处理器
 def start(update: Update, context) -> None:

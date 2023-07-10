@@ -10,6 +10,5 @@ yum install supervisor
 #
 将telegram.ini 移动到supervisor配置文件目录中
 #重启更新
-supervisorctl reread
-supervisorctl update
+supervisorctl reread all
 ```
