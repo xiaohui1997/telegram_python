@@ -97,7 +97,7 @@ def main():
     updater.start_polling()
 
     # 启动 Flask 应用
-    app.run()
+    app.run(port=8833,host="127.0.0.1")
 
 
 if __name__ == '__main__':
