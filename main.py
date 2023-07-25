@@ -31,11 +31,11 @@ def start(update: Update, context) -> None:
     global bots
     global chat_id
     chat_id = update.message.chat_id
-    context.bot.send_message(chat_id, text="I'm a bot, please talk to me!")
+    context.bot.send_message(chat_id, text="I'm a bot, please talk to me!, api调用当前群chatid:  {}".format(chat_id))
     bots = context.bot
 
 # 主动发送消息
-def sedmsgs(msg, parse_mode=telegram.ParseMode.HTML):
+def sedmsgs(msg, parse_mode=telegram.ParseMode.HTML, chat_id=chat_id):
     '''
     :param msg: 发送的文字
     :param parse_mode: 类型: parse_mode=telegram.ParseMode.MARKDOWN   parse_mode=telegram.ParseMode.HTML
@@ -46,7 +46,6 @@ def sedmsgs(msg, parse_mode=telegram.ParseMode.HTML):
         return jsonify({'code': 100003, 'msg': '发送成功'})
     else:
         return jsonify({'code': 100004, 'msg': '发送失败'})
-
 
 @app.route("/")
 def index():
@@ -59,7 +58,8 @@ def sendmsg():
     if request.method == 'POST':
         token = request.form.get('token')
         msg = request.form.get('msg')
-        if token is None or msg is None:
+        chatid = request.form.get('chatid')
+        if token is None or msg is None or chatid is None:
             info = {
                 'code': 100001,
                 'msg': '参数不完整'
@@ -74,14 +74,13 @@ def sendmsg():
             return jsonify(info)
         #消息发送
         try:
-            res = sedmsgs(msg)
+            res = sedmsgs(msg, chat_id=chatid)
             return res
         except Exception as e:
             print(e)
             return jsonify({'code': 100005, 'info': '请激活bot  run: /start', 'error': str(e)})
     else:
         return 'Method not allowed'
-
 
 def main():
     # 创建 Updater 对象
