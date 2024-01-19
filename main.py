@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import re
+
 import telegram
+import requests
 from flask import Flask, request, jsonify
-from telegram.ext import Updater, CommandHandler
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, Dispatcher
 from telegram import Update
 
 # 配置日志信息
@@ -30,8 +33,20 @@ def start(update: Update, context) -> None:
     '''
     global bots
     global chat_id
+    # 获取当前运行环境的公网IP
+    try:
+        response = requests.get('https://api.ipify.org?format=json')
+        if response.status_code == 200:
+            data = response.json()
+            public_ip = data['ip']
+            print('当前运行环境的公网IP:', public_ip)
+        else:
+            print('Error:', response.status_code)
+    except requests.RequestException as e:
+        print('Error:', str(e))
+
     chat_id = update.message.chat_id
-    context.bot.send_message(chat_id, text="I'm a bot, please talk to me!, api调用当前群chatid:  {}".format(chat_id))
+    context.bot.send_message(chat_id, text="I'm a bot, please talk to me!\n当前运行环境的公网IP: {}\n api调用当前群chatid:  {}".format(str(public_ip), chat_id))
     bots = context.bot
 
 # 主动发送消息
@@ -46,6 +61,49 @@ def sedmsgs(msg, parse_mode=telegram.ParseMode.HTML, chat_id=chat_id):
         return jsonify({'code': 100003, 'msg': '发送成功'})
     else:
         return jsonify({'code': 100004, 'msg': '发送失败'})
+
+#读取群消息
+# 处理群组消息的函数
+def handle_group_message(update: Update, context) -> None:
+    message = update.message
+    chat_id = message.chat_id
+    text = message.text
+
+    # 在这里处理群组消息
+    # 可以根据需要编写逻辑来响应不同的消息内容
+    #企业id 处理--业务
+    res = qyid(text)
+    if res is not None:
+        context.bot.send_message(chat_id=chat_id, text=f"{res[0]}")
+        context.bot.send_message(chat_id=chat_id, text=f"{res[1]}")
+        context.bot.send_message(chat_id=chat_id, text=f"--"*30)
+    # 示例：回复收到的消息
+    #context.bot.send_message(chat_id=chat_id, text=f"You said: {text}")
+
+#企业id 处理
+def qyid(msg):
+    pattern = r"\b(?=\w{25,})(?=.*\d)[a-zA-Z\d]+\b"
+    match = re.search(pattern, msg)
+    if match:
+        valid_string = match.group()
+        print("匹配成功，有效字符串为:", valid_string)
+        res = requests.post(url='http://127.0.0.1:5000/api/check', data={'qyid': valid_string})
+        if res.status_code == 200:
+            data = res.json()
+            info = '''
+            企业id：%s
+            
+对象存储地址: %s
+            ''' % (data['data']['qyid'], data['data']['url'])
+            info1 = '''
+            所属账号(appid)：%s
+
+所属桶: %s
+            ''' % (data['data']['appid'], data['data']['bucketname'])
+        return [info, info1]
+    else:
+        print("未找到匹配的有效字符串")
+        return None
 
 @app.route("/")
 def index():
@@ -91,6 +149,10 @@ def main():
 
     # 添加命令处理器
     dispatcher.add_handler(CommandHandler("start", start))
+
+    # 添加 MessageHandler 处理器，指定处理群组消息的函数和过滤器
+    group_message_handler = MessageHandler(Filters.group, handle_group_message)
+    dispatcher.add_handler(group_message_handler)
 
     # 启动机器人轮询
     updater.start_polling()
